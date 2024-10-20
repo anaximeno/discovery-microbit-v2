@@ -3,15 +3,52 @@
 #![no_std]
 
 use cortex_m_rt::entry;
-use panic_halt as _;
-use microbit as _;
+use rtt_target::{rtt_init_print, rprintln};
+use panic_rtt_target as _;
+use microbit::{
+    board::Board,
+    display::blocking::Display,
+    hal::{prelude::*, timer::Timer}
+};
 
 #[entry]
 fn main() -> ! {
-    let _y;
-    let x = 42;
-    _y = x;
+    rtt_init_print!();
 
-    // infinite loop; just so we don't leave this stack frame
-    loop {}
+    let board = Board::take().unwrap();
+    let mut timer = Timer::new(board.TIMER0);
+    let mut display = Display::new(board.display_pins);
+
+    let mut i = 0;
+    let mut j = 0;
+
+    loop {
+        let mut matrix_display = [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ];
+
+        rprintln!("Lighting Up at Position ({}, {})", i, j);
+
+        matrix_display[i][j] = 1;
+
+        // Show light_it_all for 1000 ms
+        display.show(&mut timer, matrix_display, 25);
+
+        // Clear the display again
+        display.clear();
+
+        if (i == 0) && (j < 4) {
+            j += 1;
+        } else if (j == 4) && (i < 4) {
+            i += 1;
+        } else if (i == 4) && (j >= 1) {
+            j -= 1;
+        } else if (j == 0) && (i >= 1) {
+            i -= 1;
+        }
+   }
 }
