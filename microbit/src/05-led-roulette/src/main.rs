@@ -3,13 +3,13 @@
 #![no_std]
 
 use cortex_m_rt::entry;
-use rtt_target::{rtt_init_print, rprintln};
-use panic_rtt_target as _;
 use microbit::{
     board::Board,
     display::blocking::Display,
-    hal::{prelude::*, timer::Timer}
+    hal::{prelude::*, timer::Timer},
 };
+use panic_rtt_target as _;
+use rtt_target::{rprintln, rtt_init_print};
 
 #[entry]
 fn main() -> ! {
@@ -31,8 +31,6 @@ fn main() -> ! {
             [0, 0, 0, 0, 0],
         ];
 
-        rprintln!("Lighting Up at Position ({}, {})", i, j);
-
         matrix_display[i][j] = 1;
 
         // Show light_it_all for 1000 ms
@@ -50,5 +48,5 @@ fn main() -> ! {
         } else if (j == 0) && (i >= 1) {
             i -= 1;
         }
-   }
+    }
 }
