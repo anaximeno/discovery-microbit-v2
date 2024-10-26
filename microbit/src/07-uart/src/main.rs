@@ -1,9 +1,12 @@
 #![no_main]
 #![no_std]
 
+use core::fmt::Write;
 use cortex_m_rt::entry;
-use rtt_target::rtt_init_print;
+use heapless::Vec;
+use nb::block;
 use panic_rtt_target as _;
+use rtt_target::{rprintln, rtt_init_print};
 
 #[cfg(feature = "v1")]
 use microbit::{
@@ -23,6 +26,8 @@ use microbit::{
 mod serial_setup;
 #[cfg(feature = "v2")]
 use serial_setup::UartePort;
+
+const ENTER_KEY_ASCII_CODE: u8 = 13;
 
 #[entry]
 fn main() -> ! {
@@ -50,8 +55,23 @@ fn main() -> ! {
         UartePort::new(serial)
     };
 
-    nb::block!(serial.write(b'X')).unwrap();
-    nb::block!(serial.flush()).unwrap();
+    // A buffer with 32 bytes of capacity
+    let mut buffer: Vec<u8, 32> = Vec::new();
 
-    loop {}
+    loop {
+        let byte: u8 = nb::block!(serial.read()).unwrap();
+
+        if byte == ENTER_KEY_ASCII_CODE {
+            for b in buffer.iter().rev().chain(&[b'\n', b'\r']) {
+                nb::block!(serial.write(*b)).unwrap();
+            }
+
+            nb::block!(serial.flush()).unwrap();
+            buffer.clear();
+        } else if buffer.push(byte).is_err() {
+            write!(serial, "Error: the buffer is full and will be reset!\r\n").unwrap();
+            nb::block!(serial.flush()).unwrap();
+            buffer.clear();
+        }
+    }
 }
